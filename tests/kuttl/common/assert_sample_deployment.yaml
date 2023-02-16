@@ -13,8 +13,6 @@
 apiVersion: keystone.openstack.org/v1beta1
 kind: KeystoneAPI
 metadata:
-  finalizers:
-  - KeystoneAPI
   name: keystone
   namespace: openstack
 spec:
@@ -22,9 +20,6 @@ spec:
   adminRole: admin
   adminUser: admin
   containerImage: quay.io/tripleozedcentos9/openstack-keystone:current-tripleo
-  customServiceConfig: |
-    [DEFAULT]
-    debug = true
   databaseInstance: openstack
   databaseUser: keystone
   debug:
@@ -37,10 +32,6 @@ spec:
   preserveJobs: false
   region: regionOne
   replicas: 1
-  resources:
-    requests:
-      cpu: "1.0"
-      memory: 500Mi
   secret: osp-secret
 status:
   databaseHostname: openstack
@@ -99,10 +90,6 @@ spec:
           periodSeconds: 5
           successThreshold: 1
           timeoutSeconds: 5
-        resources:
-          requests:
-            cpu: "1"
-            memory: 500Mi
       initContainers:
       - args:
         - -c
@@ -249,6 +236,22 @@ commands:
       apiEndpoints=$(oc get -n openstack KeystoneAPI  keystone -o go-template="$template")
       matches=$(echo "$apiEndpoints" | sed -e "s?$regex??")
       if [ -z "$matches" ]; then
+        exit 0
+      else
+        exit 1
+      fi
+---
+# if keystone is deployed via the openstack operator, it will have additional
+# finalizers, so here we check that at least the KeystoneAPI one is present
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+namespaced: true
+commands:
+  - script: |
+      template='{{.metadata.finalizers}}'
+      finalizers=$(oc get -n openstack KeystoneAPI keystone -o go-template="$template")
+      finalizers_with_keystone=$(echo "$finalizers" | grep "KeystoneAPI")
+      if [ -n "$finalizers_with_keystone" ]; then
         exit 0
       else
         exit 1
