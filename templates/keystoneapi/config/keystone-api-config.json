@@ -11,7 +11,7 @@
             "source": "/var/lib/config-data/merged/custom.conf",
             "dest": "/etc/keystone/keystone.conf.d/custom.conf",
             "owner": "keystone",
-            "perm": "0600"
+            "perm": "0640"
         },
         {
             "source": "/var/lib/config-data/merged/httpd.conf",
